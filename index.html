@@ -45,9 +45,10 @@
           </a>
           <a href="#guess">
             <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M9 18h6M10 21h4M8.5 14.5a6 6 0 1 1 7 0c-.8.6-1.2 1.3-1.3 2h-4.4c-.1-.7-.5-1.4-1.3-2zM12 2v1M3.5 5.5l1.4 1.4M20.5 5.5l-1.4 1.4"/>
+              <circle cx="12" cy="8" r="3.25"/>
+              <path d="M5.5 20a6.5 6.5 0 0 1 13 0M4 20h16"/>
             </svg>
-            <span>Guess</span>
+            <span>Guest</span>
           </a>
         </nav>
 
@@ -60,7 +61,7 @@
       <main class="main-content">
         <section class="content-view" id="scan">
           <h2>Scan</h2>
-          <p class="section-description">Choose a mode, then scan a QR code containing exactly 9 digits.</p>
+          <p class="section-description">Choose a mode, then scan the ID QR code.</p>
           <div class="mode-picker" role="group" aria-label="Select time mode">
             <button class="mode-button selected" id="time-in-mode" type="button" aria-pressed="true">Time In</button>
             <button class="mode-button" id="time-out-mode" type="button" aria-pressed="false">Time Out</button>
@@ -86,7 +87,7 @@
           <p class="section-description">View saved entries by day.</p>
           <div class="history-tabs" role="tablist" aria-label="History type">
             <button class="history-tab selected" id="time-history-tab" type="button" role="tab" aria-selected="true" aria-controls="time-history-panel">Time Entries</button>
-            <button class="history-tab" id="guess-history-tab" type="button" role="tab" aria-selected="false" aria-controls="guess-history-panel">Guess</button>
+            <button class="history-tab" id="guess-history-tab" type="button" role="tab" aria-selected="false" aria-controls="guess-history-panel">Guest</button>
           </div>
           <div class="history-controls">
             <label for="history-date">Date</label>
@@ -109,7 +110,7 @@
             </div>
           </section>
           <section id="guess-history-panel" role="tabpanel" aria-labelledby="guess-history-tab" hidden>
-            <button class="secondary-button history-download" id="download-guess-history" type="button">Download Guess JSON</button>
+            <button class="secondary-button history-download" id="download-guess-history" type="button">Download Guest JSON</button>
             <p class="status-message" id="guess-history-status" role="status" aria-live="polite"></p>
             <div class="table-container">
               <table class="history-table">
@@ -118,10 +119,8 @@
                     <th scope="col">Name</th>
                     <th scope="col">Reason</th>
                     <th scope="col">Associated Student</th>
-                    <th scope="col">Checker</th>
                     <th scope="col">Time In</th>
                     <th scope="col">Time Out</th>
-                    <th scope="col">Recorded At</th>
                   </tr>
                 </thead>
                 <tbody id="guess-history-entries"></tbody>
@@ -130,7 +129,7 @@
           </section>
         </section>
         <section class="content-view" id="guess" hidden>
-          <h2>Guess</h2>
+          <h2>Guest</h2>
           <p class="section-description">Record visitor details and their relationship to the student.</p>
           <form class="guess-form" id="guess-form">
             <label for="guess-name">Name:</label>
@@ -159,7 +158,7 @@
               <span id="guess-time-out-display" role="status">Not recorded</span>
             </div>
 
-            <button class="primary-button" type="submit">Save Guess</button>
+            <button class="primary-button" type="submit">Save Guest</button>
             <p class="status-message" id="guess-status" role="status" aria-live="polite"></p>
           </form>
         </section>
@@ -187,6 +186,7 @@
       </main>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
     <script src="app.js"></script>
   </body>
 </html>
