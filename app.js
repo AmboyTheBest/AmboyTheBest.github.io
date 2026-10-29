@@ -366,8 +366,9 @@ function renderTimeHistory(day) {
     : `${entries.length} ${entries.length === 1 ? 'entry' : 'entries'} for ${day.date}.`;
   ui.downloadHistory.disabled = entries.length === 0;
   document.getElementById('entry-select-heading').hidden = !state.deleteMode;
-  ui.selectEntriesButton.hidden = state.deleteMode || entries.length === 0;
-  ui.deleteSelectedButton.hidden = !state.deleteMode;
+  ui.selectEntriesButton.hidden = state.deleteMode;
+  ui.selectEntriesButton.disabled = entries.length === 0;
+  ui.deleteSelectedButton.hidden = !state.deleteMode || entries.length === 0;
   ui.cancelDeleteButton.hidden = !state.deleteMode;
 }
 
