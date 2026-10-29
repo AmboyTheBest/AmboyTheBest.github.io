@@ -1,23 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <title>GC ScanGate</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <header class="site-header">
       <div class="header-content">
-        <button
-          class="menu-toggle"
-          id="menu-toggle"
-          type="button"
-          aria-label="Open navigation menu"
-          aria-controls="main-sidebar"
-          aria-expanded="false"
-        >
+        <button class="menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation menu" aria-controls="main-sidebar" aria-expanded="false">
           <span></span>
           <span></span>
           <span></span>
@@ -28,25 +21,26 @@
 
     <div class="page-layout">
       <button class="sidebar-backdrop" id="sidebar-backdrop" type="button" aria-label="Close navigation menu" hidden></button>
+
       <aside class="sidebar" id="main-sidebar" aria-label="Main sidebar">
         <nav class="sidebar-nav" aria-label="Main navigation">
           <a class="active" href="#scan" aria-current="page">
             <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M8 8h3v3H8zM15 8h1M15 11h1M8 15h1M11 15v1M14 14h2v2h-2z"/>
+              <path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M8 8h3v3H8zM15 8h1M15 11h1M8 15h1M11 15v1M14 14h2v2h-2z" />
             </svg>
             <span>Scan</span>
           </a>
           <a href="#time-history">
             <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="12" cy="12" r="8.5"/>
-              <path d="M12 7v5l3.5 2"/>
+              <circle cx="12" cy="12" r="8.5" />
+              <path d="M12 7v5l3.5 2" />
             </svg>
             <span>Time History</span>
           </a>
           <a href="#guess">
             <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="12" cy="8" r="3.25"/>
-              <path d="M5.5 20a6.5 6.5 0 0 1 13 0M4 20h16"/>
+              <circle cx="12" cy="8" r="3.25" />
+              <path d="M5.5 20a6.5 6.5 0 0 1 13 0M4 20h16" />
             </svg>
             <span>Guest</span>
           </a>
@@ -62,10 +56,12 @@
         <section class="content-view" id="scan">
           <h2>Scan</h2>
           <p class="section-description">Choose a mode, then scan the ID QR code.</p>
+
           <div class="mode-picker" role="group" aria-label="Select time mode">
             <button class="mode-button selected" id="time-in-mode" type="button" aria-pressed="true">Time In</button>
             <button class="mode-button" id="time-out-mode" type="button" aria-pressed="false">Time Out</button>
           </div>
+
           <div class="scanner-panel">
             <video id="scanner-video" aria-label="QR code camera preview" playsinline muted hidden></video>
             <div class="scanner-controls">
@@ -74,25 +70,30 @@
             </div>
             <p class="status-message" id="scan-status" role="status" aria-live="polite">Ready to scan.</p>
           </div>
+
           <form class="manual-entry" id="manual-entry-form">
             <label for="entry-id">Or enter ID Number</label>
             <div class="manual-entry-controls">
-              <input id="entry-id" name="entry-id" type="text" inputmode="numeric" autocomplete="off" maxlength="9" pattern="[0-9]{9}" placeholder="123456789" required>
+              <input id="entry-id" name="entry-id" type="text" inputmode="numeric" autocomplete="off" maxlength="9" pattern="[0-9]{9}" placeholder="123456789" required />
               <button class="secondary-button" type="submit">Record</button>
             </div>
           </form>
         </section>
+
         <section class="content-view" id="time-history" hidden>
           <h2>Time History</h2>
           <p class="section-description">View saved entries by day.</p>
+
           <div class="history-tabs" role="tablist" aria-label="History type">
             <button class="history-tab selected" id="time-history-tab" type="button" role="tab" aria-selected="true" aria-controls="time-history-panel">Time Entries</button>
             <button class="history-tab" id="guess-history-tab" type="button" role="tab" aria-selected="false" aria-controls="guess-history-panel">Guest</button>
           </div>
+
           <div class="history-controls">
             <label for="history-date">Date</label>
             <select id="history-date"></select>
           </div>
+
           <section id="time-history-panel" role="tabpanel" aria-labelledby="time-history-tab">
             <button class="secondary-button history-download" id="download-history" type="button">Download Time Entries JSON</button>
             <p class="status-message" id="history-status" role="status" aria-live="polite"></p>
@@ -109,6 +110,7 @@
               </table>
             </div>
           </section>
+
           <section id="guess-history-panel" role="tabpanel" aria-labelledby="guess-history-tab" hidden>
             <button class="secondary-button history-download" id="download-guess-history" type="button">Download Guest JSON</button>
             <p class="status-message" id="guess-history-status" role="status" aria-live="polite"></p>
@@ -128,18 +130,20 @@
             </div>
           </section>
         </section>
+
         <section class="content-view" id="guess" hidden>
           <h2>Guest</h2>
           <p class="section-description">Record visitor details and their relationship to the student.</p>
+
           <form class="guess-form" id="guess-form">
             <label for="guess-name">Name:</label>
-            <input id="guess-name" name="name" type="text" autocomplete="name" required>
+            <input id="guess-name" name="name" type="text" autocomplete="name" required />
 
             <label for="guess-reason">Reason:</label>
             <textarea id="guess-reason" name="reason" rows="3" required></textarea>
 
             <label for="associated-student">Associated Student:</label>
-            <input id="associated-student" name="associated-student" type="text" required>
+            <input id="associated-student" name="associated-student" type="text" required />
 
             <label for="guess-checker">Checker:</label>
             <select id="guess-checker" name="checker" required>
@@ -153,6 +157,7 @@
               <button class="secondary-button" id="guess-time-in-button" type="button">Time In</button>
               <span id="guess-time-in-display" role="status">Not recorded</span>
             </div>
+
             <div class="guess-time-controls">
               <button class="secondary-button" id="guess-time-out-button" type="button" disabled>Time Out</button>
               <span id="guess-time-out-display" role="status">Not recorded</span>
@@ -162,6 +167,7 @@
             <p class="status-message" id="guess-status" role="status" aria-live="polite"></p>
           </form>
         </section>
+
         <section class="content-view" id="about" hidden>
           <h2>About</h2>
           <div class="about-team">
