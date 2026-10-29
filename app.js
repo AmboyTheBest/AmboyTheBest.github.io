@@ -140,7 +140,7 @@ function readGuesses() {
     );
 
   if (!isValid) {
-    throw new Error("Saved Guess data has an unexpected format.");
+    throw new Error("Saved Guest data has an unexpected format.");
   }
 
   return guessesByDate;
@@ -180,7 +180,7 @@ function recordEntry(rawId) {
   const id = rawId.trim();
 
   if (!/^\d{9}$/.test(id)) {
-    setScanStatus("Invalid QR code: the code must contain exactly 9 digits.");
+    setScanStatus("Invalid QR code.");
     return;
   }
 
@@ -254,22 +254,47 @@ document.getElementById("stop-camera").addEventListener("click", () => {
 });
 
 document.getElementById("start-camera").addEventListener("click", async () => {
-  if (!("BarcodeDetector" in window)) {
-    setScanStatus("QR scanning is not supported by this browser. Try a current version of Chrome or Edge, or enter the 9-digit number below.");
+  const canUseBarcodeDetector = typeof window.BarcodeDetector === "function";
+  const canUseJsQr = typeof window.jsQR === "function";
+  let detector = null;
+
+  if (canUseBarcodeDetector) {
+    try {
+      const formats =
+        typeof window.BarcodeDetector.getSupportedFormats === "function"
+          ? await window.BarcodeDetector.getSupportedFormats()
+          : ["qr_code"];
+
+      if (formats.includes("qr_code")) {
+        detector = new window.BarcodeDetector({ formats: ["qr_code"] });
+      }
+    } catch (error) {
+      if (!canUseJsQr) {
+        setScanStatus(`Could not initialize QR scanning: ${error.message}`);
+        return;
+      }
+    }
+  }
+
+  if (!detector && !canUseJsQr) {
+    setScanStatus("QR scanning could not load its decoder. Check your internet connection, reload the page, or enter the 9-digit number below.");
     return;
   }
 
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    setScanStatus("Camera access is unavailable. Open this site on localhost or HTTPS, or enter the 9-digit number below.");
+    setScanStatus("Camera access is unavailable. Open this GitHub Pages site in Safari over HTTPS, allow camera access, or enter the 9-digit number below.");
     return;
   }
 
-  let detector;
   try {
-    detector = new window.BarcodeDetector({ formats: ["qr_code"] });
+    setScanStatus("Requesting camera permission...");
     cameraStream = await navigator.mediaDevices.getUserMedia({
       audio: false,
-      video: { facingMode: { ideal: "environment" } },
+      video: {
+        facingMode: { ideal: "environment" },
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+      },
     });
 
     const video = document.getElementById("scanner-video");
@@ -280,25 +305,54 @@ document.getElementById("start-camera").addEventListener("click", async () => {
     scannerActive = true;
     document.getElementById("stop-camera").hidden = false;
     document.getElementById("start-camera").hidden = true;
-    setScanStatus("Camera is on. Point it at a QR code containing exactly 9 digits.");
+    setScanStatus("Camera is on. Point it at the QR code.");
   } catch (error) {
     stopCamera();
-    setScanStatus(`Could not start the QR scanner: ${error.message}`);
+    const message =
+      error.name === "NotAllowedError"
+        ? "Camera permission is blocked. Allow camera access for this website in Settings, then reload and try again."
+        : error.name === "NotFoundError"
+          ? "No camera was found on this device."
+          : `Could not start the QR scanner: ${error.message}`;
+    setScanStatus(message);
     return;
   }
 
   const video = document.getElementById("scanner-video");
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+
+  if (!context) {
+    stopCamera();
+    setScanStatus("Could not initialize QR scanning on this device.");
+    return;
+  }
+
   const detectQrCode = async () => {
     if (!scannerActive) {
       return;
     }
 
     try {
-      const codes = await detector.detect(video);
+      let rawValue = null;
+      if (detector) {
+        const codes = await detector.detect(video);
+        rawValue = codes.length > 0 ? codes[0].rawValue : null;
+      } else if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+        const scale = Math.min(1, 960 / video.videoWidth);
+        canvas.width = Math.round(video.videoWidth * scale);
+        canvas.height = Math.round(video.videoHeight * scale);
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const image = context.getImageData(0, 0, canvas.width, canvas.height);
+        const code = window.jsQR(image.data, image.width, image.height, {
+          inversionAttempts: "dontInvert",
+        });
+        rawValue = code ? code.data : null;
+      }
 
-      if (codes.length > 0) {
+      if (rawValue !== null) {
         stopCamera();
-        recordEntry(codes[0].rawValue);
+        recordEntry(rawValue);
         return;
       }
     } catch (error) {
@@ -307,7 +361,7 @@ document.getElementById("start-camera").addEventListener("click", async () => {
       return;
     }
 
-    window.setTimeout(detectQrCode, 250);
+    window.setTimeout(detectQrCode, 200);
   };
 
   detectQrCode();
@@ -361,7 +415,7 @@ function renderHistory() {
     document.getElementById("history-status").textContent =
       `Could not read saved time history: ${error.message}`;
     document.getElementById("guess-history-status").textContent =
-      `Could not read saved Guess history: ${error.message}`;
+      `Could not read saved Guest history: ${error.message}`;
   }
 }
 
@@ -402,10 +456,8 @@ function renderGuessHistory(selectedDay) {
       guess.name,
       guess.reason,
       guess.associatedStudent,
-      guess.checker,
       formatGuessTime(guess.timeIn),
       formatGuessTime(guess.timeOut),
-      formatTimestamp(guess.recordedAt),
     ].forEach((value) => {
       const cell = document.createElement("td");
       cell.textContent = value;
@@ -416,8 +468,8 @@ function renderGuessHistory(selectedDay) {
 
   status.textContent =
     guesses.length === 0
-      ? "There are no Guess records for this date."
-      : `${guesses.length} ${guesses.length === 1 ? "Guess record" : "Guess records"} for ${selectedDay.date}.`;
+      ? "There are no Guest records for this date."
+      : `${guesses.length} ${guesses.length === 1 ? "Guest record" : "Guest records"} for ${selectedDay.date}.`;
   document.getElementById("download-guess-history").disabled = guesses.length === 0;
 }
 
@@ -473,7 +525,7 @@ document.getElementById("download-history").addEventListener("click", () => {
 document.getElementById("download-guess-history").addEventListener("click", () => {
   downloadHistoryJson(
     readGuesses,
-    "Guess",
+    "Guest",
     "guess-history-status"
   );
 });
@@ -584,13 +636,13 @@ document.getElementById("guess-form").addEventListener("submit", (event) => {
     updateGuessTimeDisplay("timeOut", guessTimeOut);
     document.getElementById("guess-time-out-button").disabled = true;
     document.getElementById("guess-status").textContent =
-      `Guess record for ${guess.name} saved.`;
+      `Guest record for ${guess.name} saved.`;
     if (!document.getElementById("time-history").hidden) {
       renderHistory();
     }
   } catch (error) {
     document.getElementById("guess-status").textContent =
-      `Could not save this Guess record: ${error.message}`;
+      `Could not save this Guest record: ${error.message}`;
   }
 });
 
