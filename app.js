@@ -1,6 +1,6 @@
 const STORAGE_KEYS = { entries: 'securehub.entries.v1', guesses: 'securehub.guesses.v1' };
 const ID_RE = /^\d{9}$/;
-const state = { selectedMode: 'timeIn', cameraStream: null, scannerActive: false, guessTimeIn: null, guessTimeOut: null };
+const state = { selectedMode: 'timeIn', cameraStream: null, scannerActive: false, guessTimeIn: null, guessTimeOut: null, deleteMode: false };
 const navLinks = [...document.querySelectorAll('.sidebar a[href^="#"]:not(.logout-link)')];
 const contentViews = [...document.querySelectorAll('.content-view')];
 const ui = {
@@ -27,6 +27,9 @@ const ui = {
   scannerVideo: document.getElementById('scanner-video'),
   downloadHistory: document.getElementById('download-history'),
   downloadGuessHistory: document.getElementById('download-guess-history'),
+  selectEntriesButton: document.getElementById('select-entries-button'),
+  deleteSelectedButton: document.getElementById('delete-selected-button'),
+  cancelDeleteButton: document.getElementById('cancel-delete-button'),
 };
 
 function closeMobileMenu() {
@@ -131,22 +134,22 @@ function recordEntry(rawId) {
 
   try {
     const rows = readEntries();
-    const date = localDateKey();
-    const day = rows[date] || { date, entries: [] };
-    let entry = day.entries.find((item) => item.id === id);
-    if (!entry) {
-      entry = { id, timeIn: null, timeOut: null };
-      day.entries.push(entry);
-    }
+    const today = localDateKey();
+    const todayDay = rows[today] || { date: today, entries: [] };
+    let entry = todayDay.entries.find((item) => item.id === id);
 
     if (state.selectedMode === 'timeIn') {
-      if (entry.timeIn) {
+      if (entry && entry.timeIn) {
         setScanStatus(`ID ${id} already has a Time In recorded for today.`);
         return;
       }
+      if (!entry) {
+        entry = { id, timeIn: null, timeOut: null };
+        todayDay.entries.push(entry);
+      }
       entry.timeIn = new Date().toISOString();
     } else {
-      if (!entry.timeIn) {
+      if (!entry || !entry.timeIn) {
         setScanStatus(`ID ${id} needs a Time In before Time Out can be recorded.`);
         return;
       }
@@ -157,7 +160,7 @@ function recordEntry(rawId) {
       entry.timeOut = new Date().toISOString();
     }
 
-    rows[date] = day;
+    rows[today] = todayDay;
     localStorage.setItem(STORAGE_KEYS.entries, JSON.stringify(rows));
     setScanStatus(`${state.selectedMode === 'timeIn' ? 'Time In' : 'Time Out'} recorded for ID ${id} at ${new Date().toLocaleTimeString()}.`);
     ui.entryId.value = '';
@@ -336,9 +339,20 @@ function renderHistory() {
 function renderTimeHistory(day) {
   const tbody = document.getElementById('history-entries');
   tbody.replaceChildren();
-  const entries = day ? day.entries : [];
-  entries.forEach((entry) => {
+  const entries = day ? day.entries.map((entry, index) => ({ entry, index })).reverse() : [];
+  entries.forEach(({ entry, index }) => {
     const row = document.createElement('tr');
+    if (state.deleteMode) {
+      const selectCell = document.createElement('td');
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.className = 'entry-select';
+      checkbox.dataset.entryIndex = String(index);
+      checkbox.setAttribute('aria-label', `Select ID ${entry.id} for deletion`);
+      selectCell.append(checkbox);
+      row.append(selectCell);
+    }
+
     [entry.id, formatTimestamp(entry.timeIn), formatTimestamp(entry.timeOut)].forEach((value) => {
       const cell = document.createElement('td');
       cell.textContent = value;
@@ -351,7 +365,49 @@ function renderTimeHistory(day) {
     ? 'There are no time entries for this date.'
     : `${entries.length} ${entries.length === 1 ? 'entry' : 'entries'} for ${day.date}.`;
   ui.downloadHistory.disabled = entries.length === 0;
+  document.getElementById('entry-select-heading').hidden = !state.deleteMode;
+  ui.selectEntriesButton.hidden = state.deleteMode || entries.length === 0;
+  ui.deleteSelectedButton.hidden = !state.deleteMode;
+  ui.cancelDeleteButton.hidden = !state.deleteMode;
 }
+
+function finishDeleteMode() {
+  state.deleteMode = false;
+  renderHistory();
+}
+
+ui.selectEntriesButton.addEventListener('click', () => {
+  state.deleteMode = true;
+  renderHistory();
+});
+
+ui.cancelDeleteButton.addEventListener('click', finishDeleteMode);
+
+ui.deleteSelectedButton.addEventListener('click', () => {
+  const selected = [...document.querySelectorAll('.entry-select:checked')]
+    .map((checkbox) => Number(checkbox.dataset.entryIndex));
+  if (!selected.length) {
+    ui.historyStatus.textContent = 'Select at least one entry to delete.';
+    return;
+  }
+  if (!window.confirm(`Delete ${selected.length} selected ${selected.length === 1 ? 'entry' : 'entries'}?`)) return;
+
+  try {
+    const rows = readEntries();
+    const date = ui.historyDate.value;
+    const day = rows[date];
+    if (!day) return finishDeleteMode();
+    const removed = new Set(selected);
+    day.entries = day.entries.filter((_, index) => !removed.has(index));
+    if (day.entries.length) rows[date] = day;
+    else delete rows[date];
+    localStorage.setItem(STORAGE_KEYS.entries, JSON.stringify(rows));
+    state.deleteMode = false;
+    renderHistory();
+  } catch (error) {
+    ui.historyStatus.textContent = `Could not delete the selected entries: ${error.message}`;
+  }
+});
 
 function renderGuessHistory(day) {
   const tbody = document.getElementById('guess-history-entries');
