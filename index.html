@@ -95,13 +95,21 @@
           </div>
 
           <section id="time-history-panel" role="tabpanel" aria-labelledby="time-history-tab">
-            <button class="secondary-button history-download" id="download-history" type="button">Download Time Entries JSON</button>
+            <div class="history-toolbar">
+              <button class="secondary-button history-download" id="download-history" type="button">Download Time Entries JSON</button>
+              <div class="history-actions">
+                <button class="secondary-button danger-button" id="select-entries-button" type="button" hidden>Select entries to delete</button>
+                <button class="secondary-button danger-button" id="delete-selected-button" type="button" hidden>Delete selected</button>
+                <button class="secondary-button" id="cancel-delete-button" type="button" hidden>Cancel</button>
+              </div>
+            </div>
             <p class="status-message" id="history-status" role="status" aria-live="polite"></p>
             <div class="table-container">
               <table class="history-table">
                 <thead>
                   <tr>
-                    <th scope="col">9-digit ID</th>
+                    <th id="entry-select-heading" scope="col" hidden>Select</th>
+                    <th scope="col">ID Number</th>
                     <th scope="col">Time In</th>
                     <th scope="col">Time Out</th>
                   </tr>
