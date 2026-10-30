@@ -549,7 +549,8 @@ document.getElementById('guess-form').addEventListener('submit', (e) => {
 
 window.addEventListener('beforeunload', stopCamera);
 renderHistory();
-const initialViewId = window.location.hash.slice(1);
+const initialHash = window.location.hash.slice(1);
+const initialViewId = initialHash === 'guess' ? 'guest' : initialHash;
 const initialView = document.getElementById(initialViewId);
 const defaultView = initialView && initialView.classList.contains('content-view') ? initialViewId : 'scan';
 showView(defaultView);
