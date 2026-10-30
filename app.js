@@ -518,7 +518,7 @@ document.getElementById('guess-form').addEventListener('submit', (e) => {
     recordedAt: new Date().toISOString(),
   };
 
-  if (!guess.name || !guess.reason || !guess.associatedStudent || !guess.checker || !guess.timeIn) {
+  if (!guess.name || !guess.reason || !guess.timeIn) {
     ui.guessStatus.textContent = 'Please complete all required fields, including Time In.';
     return;
   }
