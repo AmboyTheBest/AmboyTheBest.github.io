@@ -290,6 +290,8 @@ body {
 .history-controls label,
 .guess-form label { font-weight: 600; }
 
+.required-indicator { color: var(--danger); }
+
 .manual-entry input,
 .history-controls select,
 .guess-form input,
