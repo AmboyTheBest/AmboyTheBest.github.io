@@ -144,18 +144,18 @@
           <p class="section-description">Record visitor details and their relationship to the student.</p>
 
           <form class="guess-form" id="guess-form">
-            <label for="guess-name">Name:</label>
+            <label for="guess-name">Name: <span class="required-indicator" aria-hidden="true">*</span></label>
             <input id="guess-name" name="name" type="text" autocomplete="name" required />
 
-            <label for="guess-reason">Reason:</label>
+            <label for="guess-reason">Reason: <span class="required-indicator" aria-hidden="true">*</span></label>
             <textarea id="guess-reason" name="reason" rows="3" required></textarea>
 
-            <label for="associated-student">Associated Student:</label>
-            <input id="associated-student" name="associated-student" type="text" required />
+            <label for="associated-student">Associated Student (optional):</label>
+            <input id="associated-student" name="associated-student" type="text" />
 
-            <label for="guess-checker">Checker:</label>
-            <select id="guess-checker" name="checker" required>
-              <option value="">Select a relationship</option>
+            <label for="guess-checker">Relationship (optional):</label>
+            <select id="guess-checker" name="checker">
+              <option value="">Select a relationship (optional)</option>
               <option value="Guardian">Guardian</option>
               <option value="Parent">Parent</option>
               <option value="Other">Other</option>
