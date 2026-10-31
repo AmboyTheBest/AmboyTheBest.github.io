@@ -21,6 +21,13 @@
           <span></span> <span></span> <span></span>
         </button>
         <h1>GC <span class="brand-highlight">ScanGate</span></h1>
+        <button
+          class="secondary-button kiosk-exit-button"
+          id="kiosk-exit-button"
+          type="button"
+        >
+          Exit Kiosk Mode
+        </button>
       </div>
     </header>
     <div class="page-layout">
@@ -55,83 +62,105 @@
             </svg>
             <span>Guest</span>
           </a>
+          <a href="#kiosk-mode">
+            <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 7V5a1 1 0 0 1 1-1h2M17 4h2a1 1 0 0 1 1 1v2M20 17v2a1 1 0 0 1-1 1h-2M7 20H5a1 1 0 0 1-1-1v-2M8 8h3v3H8zM15 8h1M15 11h1M8 15h1M11 15v1M14 14h2v2h-2z" />
+            </svg>
+            <span>Kiosk Mode</span>
+          </a>
         </nav>
-        <nav class="sidebar-footer" aria-label="Account navigation">
+        <nav class="sidebar-footer" aria-label="Footer navigation">
           <a href="#about">About</a>
-          <a class="logout-link" href="#logout">Log Out</a>
         </nav>
       </aside>
       <main class="main-content">
         <section class="content-view" id="scan">
-          <h2>Scan</h2>
-          <p class="section-description">
-            Choose a mode, then scan the ID QR code.
-          </p>
-          <div class="mode-picker" role="group" aria-label="Select time mode">
-            <button
-              class="mode-button selected"
-              id="time-in-mode"
-              type="button"
-              aria-pressed="true"
-            >
-              Time In
-            </button>
-            <button
-              class="mode-button"
-              id="time-out-mode"
-              type="button"
-              aria-pressed="false"
-            >
-              Time Out
-            </button>
-          </div>
-          <div class="scanner-panel">
-            <video
-              id="scanner-video"
-              aria-label="QR code camera preview"
-              playsinline
-              muted
-              hidden
-            ></video>
-            <div class="scanner-controls">
-              <button class="primary-button" id="start-camera" type="button">
-                Start QR Scanner
-              </button>
-              <button
-                class="secondary-button"
-                id="stop-camera"
-                type="button"
-                hidden
-              >
-                Stop Camera
-              </button>
+          <div class="kiosk-layout">
+            <div class="kiosk-scanner-column">
+              <div class="kiosk-standard-heading">
+                <h2>Scan</h2>
+                <p class="section-description">
+                  Choose a mode, then scan the ID QR code.
+                </p>
+              </div>
+              <div class="mode-picker" role="group" aria-label="Select time mode">
+                <button
+                  class="mode-button selected"
+                  id="time-in-mode"
+                  type="button"
+                  aria-pressed="true"
+                >
+                  Time In
+                </button>
+                <button
+                  class="mode-button"
+                  id="time-out-mode"
+                  type="button"
+                  aria-pressed="false"
+                >
+                  Time Out
+                </button>
+              </div>
+              <div class="scanner-panel">
+                <div class="scanner-preview" id="scanner-preview" hidden>
+                  <video
+                    id="scanner-video"
+                    aria-label="QR code camera preview"
+                    playsinline
+                    muted
+                    hidden
+                  ></video>
+                  <div class="scan-frame" aria-hidden="true"></div>
+                </div>
+                <div class="scanner-controls">
+                  <button class="primary-button" id="start-camera" type="button">
+                    Start QR Scanner
+                  </button>
+                  <button
+                    class="secondary-button"
+                    id="stop-camera"
+                    type="button"
+                    hidden
+                  >
+                    Stop Camera
+                  </button>
+                </div>
+                <p
+                  class="status-message"
+                  id="scan-status"
+                  role="status"
+                  aria-live="polite"
+                >
+                  Ready to scan.
+                </p>
+              </div>
             </div>
-            <p
-              class="status-message"
-              id="scan-status"
-              role="status"
-              aria-live="polite"
+            <section
+              class="kiosk-attendance-panel"
+              aria-label="Attendance clock and records"
             >
-              Ready to scan.
-            </p>
+              <div class="kiosk-clock">
+                <p class="kiosk-clock-label">Current Time:</p>
+                <h2 id="kiosk-clock-time">--:--:--</h2>
+                <p class="kiosk-clock-date">
+                  <strong>Current Date:</strong>
+                  <span id="kiosk-clock-date"></span>
+                </p>
+              </div>
+              <div class="table-container kiosk-table-container">
+                <table class="history-table kiosk-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Student ID</th>
+                      <th scope="col">Time In</th>
+                      <th scope="col">Time Out</th>
+                    </tr>
+                  </thead>
+                  <tbody id="kiosk-attendance-entries"></tbody>
+                </table>
+              </div>
+            </section>
           </div>
-          <form class="manual-entry" id="manual-entry-form">
-            <label for="entry-id">Or enter ID Number</label>
-            <div class="manual-entry-controls">
-              <input
-                id="entry-id"
-                name="entry-id"
-                type="text"
-                inputmode="numeric"
-                autocomplete="off"
-                maxlength="9"
-                pattern="[0-9]{9}"
-                placeholder="123456789"
-                required
-              />
-              <button class="secondary-button" type="submit">Record</button>
-            </div>
-          </form>
         </section>
         <section class="content-view" id="time-history" hidden>
           <h2>Time History</h2>
