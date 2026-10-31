@@ -370,17 +370,24 @@
               rows="3"
               required
             ></textarea>
-            <label for="associated-student"
-              >Associated Student (optional):</label
-            >
+            <label for="associated-student">Associated Student (optional):</label>
             <input
               id="associated-student"
               name="associated-student"
               type="text"
             />
-            <label for="guess-checker">Relationship (optional):</label>
-            <select id="guess-checker" name="checker">
-              <option value="">Select a relationship (optional)</option>
+            <label for="guess-checker" id="guess-checker-label"
+              >Relationship:
+              <span
+                class="required-indicator"
+                id="guess-checker-required"
+                aria-hidden="true"
+                hidden
+                >*</span
+              ></label
+            >
+            <select id="guess-checker" name="checker" disabled>
+              <option value="">Select a relationship</option>
               <option value="Guardian">Guardian</option>
               <option value="Parent">Parent</option>
               <option value="Other">Other</option>
