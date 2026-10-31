@@ -210,6 +210,13 @@ ui.stopCamera.addEventListener('click', () => {
 async function startCamera() {
   const hasNative = typeof window.BarcodeDetector === 'function';
   const hasJsQr = typeof window.jsQR === 'function';
+  const mediaDevices = navigator.mediaDevices;
+  const legacyGetUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+  const getUserMedia = mediaDevices && mediaDevices.getUserMedia
+    ? (constraints) => mediaDevices.getUserMedia(constraints)
+    : legacyGetUserMedia && ((constraints) => new Promise((resolve, reject) => {
+      legacyGetUserMedia.call(navigator, constraints, resolve, reject);
+    }));
   let detector = null;
 
   if (hasNative) {
@@ -229,17 +236,27 @@ async function startCamera() {
     return;
   }
 
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    setScanStatus('Camera access is unavailable. Open this GitHub Pages site in Safari over HTTPS, allow camera access, or enter the 9-digit number below.');
+  if (!getUserMedia) {
+    setScanStatus('Camera access is unavailable. Open this site over HTTPS (or localhost), allow camera access, or enter the 9-digit number below.');
     return;
   }
 
   try {
     setScanStatus('Requesting camera permission...');
-    state.cameraStream = await navigator.mediaDevices.getUserMedia({
-      audio: false,
-      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
-    });
+    const cameraOptions = [
+      { audio: false, video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } },
+      { audio: false, video: { facingMode: { ideal: 'environment' } } },
+      { audio: false, video: true },
+    ];
+    for (const constraints of cameraOptions) {
+      try {
+        state.cameraStream = await getUserMedia(constraints);
+        break;
+      } catch (error) {
+        if (!['OverconstrainedError', 'ConstraintNotSatisfiedError', 'NotFoundError'].includes(error.name)) throw error;
+      }
+    }
+    if (!state.cameraStream) throw new Error('No usable camera was found.');
     ui.scannerVideo.srcObject = state.cameraStream;
     ui.scannerVideo.hidden = false;
     await ui.scannerVideo.play();
@@ -272,15 +289,21 @@ async function startCamera() {
     try {
       let rawValue = null;
       if (detector) {
-        const codes = await detector.detect(ui.scannerVideo);
-        rawValue = codes.length > 0 ? codes[0].rawValue : null;
-      } else if (ui.scannerVideo.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+        try {
+          const codes = await detector.detect(ui.scannerVideo);
+          rawValue = codes.length > 0 ? codes[0].rawValue : null;
+        } catch (error) {
+          if (!hasJsQr) throw error;
+          detector = null;
+        }
+      }
+      if (!detector && hasJsQr && ui.scannerVideo.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && ui.scannerVideo.videoWidth > 0) {
         const scale = Math.min(1, 960 / ui.scannerVideo.videoWidth);
         canvas.width = Math.round(ui.scannerVideo.videoWidth * scale);
         canvas.height = Math.round(ui.scannerVideo.videoHeight * scale);
         context.drawImage(ui.scannerVideo, 0, 0, canvas.width, canvas.height);
         const image = context.getImageData(0, 0, canvas.width, canvas.height);
-        const code = window.jsQR(image.data, image.width, image.height, { inversionAttempts: 'dontInvert' });
+        const code = window.jsQR(image.data, image.width, image.height, { inversionAttempts: 'attemptBoth' });
         rawValue = code ? code.data : null;
       }
 
@@ -480,7 +503,13 @@ function renderGuessHistory(day) {
     const selectCell = createDeleteCell('guesses', index, `Select Guest entry for ${guess.name} for deletion`);
     if (selectCell) row.append(selectCell);
 
-    [guess.name, guess.reason, guess.associatedStudent, formatGuessTime(guess.timeIn)].forEach((value) => {
+    [
+      guess.name,
+      guess.reason,
+      guess.associatedStudent?.trim() || 'N/A',
+      guess.checker?.trim() || 'N/A',
+      formatGuessTime(guess.timeIn),
+    ].forEach((value) => {
       const cell = document.createElement('td');
       cell.textContent = value;
       row.append(cell);
@@ -588,13 +617,19 @@ function updateGuestTimeInDisplay() {
     : 'Not recorded';
 }
 
+function updateGuestActionLabel() {
+  const form = document.getElementById('guess-form');
+  const hasGuestDetails = form.elements.name.value.trim() || form.elements.reason.value.trim();
+  ui.guessTimeInButton.textContent = hasGuestDetails || !state.guessRecordId ? 'Time In' : 'Time Out';
+}
+
 function resetGuestCheckIn() {
   state.guessTimeIn = null;
   state.guessRecordDate = null;
   state.guessRecordId = null;
   document.getElementById('guess-form').reset();
   updateGuestTimeInDisplay();
-  ui.guessTimeInButton.textContent = 'Time In';
+  updateGuestActionLabel();
 }
 
 function saveGuestRecord(guess, date, recordId) {
@@ -609,8 +644,15 @@ function saveGuestRecord(guess, date, recordId) {
   localStorage.setItem(STORAGE_KEYS.guesses, JSON.stringify(rows));
 }
 
+document.getElementById('guess-form').addEventListener('input', updateGuestActionLabel);
+document.getElementById('guess-checker').addEventListener('change', updateGuestActionLabel);
+
 ui.guessTimeInButton.addEventListener('click', () => {
-  if (state.guessTimeIn && state.guessRecordDate && state.guessRecordId) {
+  const form = document.getElementById('guess-form');
+  const name = form.elements.name.value.trim();
+  const reason = form.elements.reason.value.trim();
+
+  if (!name && !reason && state.guessTimeIn && state.guessRecordDate && state.guessRecordId) {
     const timeOut = new Date().toISOString();
     try {
       saveGuestRecord({ timeOut }, state.guessRecordDate, state.guessRecordId);
@@ -623,8 +665,6 @@ ui.guessTimeInButton.addEventListener('click', () => {
     return;
   }
 
-  const name = document.getElementById('guess-name').value.trim();
-  const reason = document.getElementById('guess-reason').value.trim();
   if (!name || !reason) {
     ui.guessStatus.textContent = 'Enter the guest name and reason before recording Time In.';
     return;
@@ -647,9 +687,9 @@ ui.guessTimeInButton.addEventListener('click', () => {
     state.guessTimeIn = timeIn;
     state.guessRecordDate = date;
     state.guessRecordId = timeIn;
-    document.getElementById('guess-form').reset();
+    form.reset();
     updateGuestTimeInDisplay();
-    ui.guessTimeInButton.textContent = 'Time Out';
+    updateGuestActionLabel();
     ui.guessStatus.textContent = '';
     if (!ui.timeHistory.hidden) renderHistory();
   } catch (error) {
