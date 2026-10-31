@@ -1,6 +1,6 @@
 const STORAGE_KEYS = { entries: 'securehub.entries.v1', guesses: 'securehub.guesses.v1' };
 const ID_RE = /^\d{9}$/;
-const state = { selectedMode: 'timeIn', cameraStream: null, scannerActive: false, guessTimeIn: null, guessTimeOut: null, deleteMode: false };
+const state = { selectedMode: 'timeIn', cameraStream: null, scannerActive: false, guessTimeIn: null, guessRecordDate: null, guessRecordId: null, deleteMode: null, confirmDeletion: false };
 const navLinks = [...document.querySelectorAll('.sidebar a[href^="#"]:not(.logout-link)')];
 const contentViews = [...document.querySelectorAll('.content-view')];
 const ui = {
@@ -19,9 +19,7 @@ const ui = {
   guessHistoryPanel: document.getElementById('guess-history-panel'),
   guessStatus: document.getElementById('guess-status'),
   guessTimeInDisplay: document.getElementById('guess-time-in-display'),
-  guessTimeOutDisplay: document.getElementById('guess-time-out-display'),
   guessTimeInButton: document.getElementById('guess-time-in-button'),
-  guessTimeOutButton: document.getElementById('guess-time-out-button'),
   startCamera: document.getElementById('start-camera'),
   stopCamera: document.getElementById('stop-camera'),
   scannerVideo: document.getElementById('scanner-video'),
@@ -29,7 +27,24 @@ const ui = {
   downloadGuessHistory: document.getElementById('download-guess-history'),
   selectEntriesButton: document.getElementById('select-entries-button'),
   deleteSelectedButton: document.getElementById('delete-selected-button'),
+  confirmDeleteEntriesButton: document.getElementById('confirm-delete-entries-button'),
   cancelDeleteButton: document.getElementById('cancel-delete-button'),
+  selectGuessesButton: document.getElementById('select-guesses-button'),
+  deleteSelectedGuessesButton: document.getElementById('delete-selected-guesses-button'),
+  confirmDeleteGuessesButton: document.getElementById('confirm-delete-guesses-button'),
+  cancelGuessDeleteButton: document.getElementById('cancel-guess-delete-button'),
+};
+const deleteControls = {
+  entries: {
+    key: STORAGE_KEYS.entries, collection: 'entries', selector: '#history-entries .entry-select:checked',
+    status: ui.historyStatus, select: ui.selectEntriesButton, remove: ui.deleteSelectedButton,
+    confirm: ui.confirmDeleteEntriesButton, cancel: ui.cancelDeleteButton,
+  },
+  guesses: {
+    key: STORAGE_KEYS.guesses, collection: 'guesses', selector: '#guess-history-entries .guess-select:checked',
+    status: ui.guessHistoryStatus, select: ui.selectGuessesButton, remove: ui.deleteSelectedGuessesButton,
+    confirm: ui.confirmDeleteGuessesButton, cancel: ui.cancelGuessDeleteButton,
+  },
 };
 
 function closeMobileMenu() {
@@ -342,16 +357,8 @@ function renderTimeHistory(day) {
   const entries = day ? day.entries.map((entry, index) => ({ entry, index })).reverse() : [];
   entries.forEach(({ entry, index }) => {
     const row = document.createElement('tr');
-    if (state.deleteMode) {
-      const selectCell = document.createElement('td');
-      const checkbox = document.createElement('input');
-      checkbox.type = 'checkbox';
-      checkbox.className = 'entry-select';
-      checkbox.dataset.entryIndex = String(index);
-      checkbox.setAttribute('aria-label', `Select ID ${entry.id} for deletion`);
-      selectCell.append(checkbox);
-      row.append(selectCell);
-    }
+    const selectCell = createDeleteCell('entries', index, `Select ID ${entry.id} for deletion`);
+    if (selectCell) row.append(selectCell);
 
     [entry.id, formatTimestamp(entry.timeIn), formatTimestamp(entry.timeOut)].forEach((value) => {
       const cell = document.createElement('td');
@@ -365,62 +372,135 @@ function renderTimeHistory(day) {
     ? 'There are no time entries for this date.'
     : `${entries.length} ${entries.length === 1 ? 'entry' : 'entries'} for ${day.date}.`;
   ui.downloadHistory.disabled = entries.length === 0;
-  document.getElementById('entry-select-heading').hidden = !state.deleteMode;
-  ui.selectEntriesButton.hidden = state.deleteMode;
-  ui.selectEntriesButton.disabled = entries.length === 0;
-  ui.deleteSelectedButton.hidden = !state.deleteMode || entries.length === 0;
-  ui.cancelDeleteButton.hidden = !state.deleteMode;
+  document.getElementById('entry-select-heading').hidden = state.deleteMode !== 'entries';
+  renderDeleteControls('entries', entries.length);
 }
 
-function finishDeleteMode() {
-  state.deleteMode = false;
+function createDeleteCell(type, index, label) {
+  if (state.deleteMode !== type) return null;
+  const cell = document.createElement('td');
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  checkbox.className = type === 'entries' ? 'entry-select' : 'guess-select';
+  checkbox.dataset.index = String(index);
+  checkbox.setAttribute('aria-label', label);
+  cell.append(checkbox);
+  return cell;
+}
+
+function renderDeleteControls(type, count) {
+  const controls = deleteControls[type];
+  const active = state.deleteMode === type;
+  const confirming = active && state.confirmDeletion;
+  controls.select.hidden = active;
+  controls.select.disabled = count === 0;
+  controls.remove.hidden = !active || count === 0 || confirming;
+  controls.confirm.hidden = !confirming;
+  controls.cancel.hidden = !active;
+}
+
+function deletionLabel(type, count) {
+  return type === 'guesses'
+    ? `Guest ${count === 1 ? 'entry' : 'entries'}`
+    : count === 1 ? 'entry' : 'entries';
+}
+
+function beginDeleteMode(type) {
+  state.deleteMode = type;
+  state.confirmDeletion = false;
   renderHistory();
 }
 
-ui.selectEntriesButton.addEventListener('click', () => {
-  state.deleteMode = true;
-  renderHistory();
-});
-
-ui.cancelDeleteButton.addEventListener('click', finishDeleteMode);
-
-ui.deleteSelectedButton.addEventListener('click', () => {
-  const selected = [...document.querySelectorAll('.entry-select:checked')]
-    .map((checkbox) => Number(checkbox.dataset.entryIndex));
-  if (!selected.length) {
-    ui.historyStatus.textContent = 'Select at least one entry to delete.';
+function requestDeletion(type) {
+  const controls = deleteControls[type];
+  const selected = document.querySelectorAll(controls.selector).length;
+  if (!selected) {
+    controls.status.textContent = `Select at least one ${deletionLabel(type, 1)} to delete.`;
     return;
   }
-  if (!window.confirm(`Delete ${selected.length} selected ${selected.length === 1 ? 'entry' : 'entries'}?`)) return;
+  state.confirmDeletion = true;
+  controls.status.textContent = `Delete ${selected} selected ${deletionLabel(type, selected)}? Confirm or cancel.`;
+  controls.remove.hidden = true;
+  controls.confirm.hidden = false;
+}
+
+function confirmDeletion(type) {
+  const controls = deleteControls[type];
+  const selected = [...document.querySelectorAll(controls.selector)]
+    .map((checkbox) => Number(checkbox.dataset.index))
+    .sort((a, b) => b - a);
+  if (!selected.length) {
+    controls.status.textContent = `Select at least one ${deletionLabel(type, 1)} to delete.`;
+    state.confirmDeletion = false;
+    renderHistory();
+    return;
+  }
 
   try {
-    const rows = readEntries();
+    const rows = readStorage(controls.key, controls.collection);
     const date = ui.historyDate.value;
     const day = rows[date];
-    if (!day) return finishDeleteMode();
-    const removed = new Set(selected);
-    day.entries = day.entries.filter((_, index) => !removed.has(index));
-    if (day.entries.length) rows[date] = day;
-    else delete rows[date];
-    localStorage.setItem(STORAGE_KEYS.entries, JSON.stringify(rows));
-    state.deleteMode = false;
+    if (!day) throw new Error(`No ${type === 'guesses' ? 'Guest ' : ''}entries are saved for this date.`);
+    const removesActiveGuest = type === 'guesses' && date === state.guessRecordDate
+      && selected.some((index) => day.guesses[index]?.recordedAt === state.guessRecordId);
+    selected.forEach((index) => day[controls.collection].splice(index, 1));
+    if (day[controls.collection].length === 0) delete rows[date];
+    localStorage.setItem(controls.key, JSON.stringify(rows));
+    if (removesActiveGuest) resetGuestCheckIn();
+    state.deleteMode = null;
+    state.confirmDeletion = false;
     renderHistory();
+    controls.status.textContent = `Deleted ${selected.length} ${deletionLabel(type, selected.length)}.`;
   } catch (error) {
-    ui.historyStatus.textContent = `Could not delete the selected entries: ${error.message}`;
+    controls.status.textContent = `Could not delete the selected ${type === 'guesses' ? 'Guest entries' : 'entries'}: ${error.message}`;
   }
-});
+}
+
+function cancelDeletion() {
+  state.deleteMode = null;
+  state.confirmDeletion = false;
+  renderHistory();
+}
+
+ui.selectEntriesButton.addEventListener('click', () => beginDeleteMode('entries'));
+ui.selectGuessesButton.addEventListener('click', () => beginDeleteMode('guesses'));
+ui.deleteSelectedButton.addEventListener('click', () => requestDeletion('entries'));
+ui.deleteSelectedGuessesButton.addEventListener('click', () => requestDeletion('guesses'));
+ui.confirmDeleteEntriesButton.addEventListener('click', () => confirmDeletion('entries'));
+ui.confirmDeleteGuessesButton.addEventListener('click', () => confirmDeletion('guesses'));
+ui.cancelDeleteButton.addEventListener('click', cancelDeletion);
+ui.cancelGuessDeleteButton.addEventListener('click', cancelDeletion);
 
 function renderGuessHistory(day) {
   const tbody = document.getElementById('guess-history-entries');
   tbody.replaceChildren();
-  const guesses = day ? day.guesses : [];
-  guesses.forEach((guess) => {
+  const guesses = day ? day.guesses.map((guess, index) => ({ guess, index })).reverse() : [];
+  guesses.forEach(({ guess, index }) => {
     const row = document.createElement('tr');
-    [guess.name, guess.reason, guess.associatedStudent, formatGuessTime(guess.timeIn), formatGuessTime(guess.timeOut)].forEach((value) => {
+    const selectCell = createDeleteCell('guesses', index, `Select Guest entry for ${guess.name} for deletion`);
+    if (selectCell) row.append(selectCell);
+
+    [guess.name, guess.reason, guess.associatedStudent, formatGuessTime(guess.timeIn)].forEach((value) => {
       const cell = document.createElement('td');
       cell.textContent = value;
       row.append(cell);
     });
+
+    const timeOutCell = document.createElement('td');
+    if (guess.timeOut) {
+      timeOutCell.textContent = formatGuessTime(guess.timeOut);
+    } else if (guess.timeIn) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'secondary-button';
+      button.dataset.guessTimeOutIndex = String(index);
+      button.textContent = 'Time Out';
+      button.setAttribute('aria-label', `Record Time Out for ${guess.name}`);
+      timeOutCell.append(button);
+    } else {
+      timeOutCell.textContent = '—';
+    }
+    row.append(timeOutCell);
     tbody.append(row);
   });
 
@@ -428,7 +508,33 @@ function renderGuessHistory(day) {
     ? 'There are no Guest records for this date.'
     : `${guesses.length} ${guesses.length === 1 ? 'Guest record' : 'Guest records'} for ${day.date}.`;
   ui.downloadGuessHistory.disabled = guesses.length === 0;
+  document.getElementById('guess-select-heading').hidden = state.deleteMode !== 'guesses';
+  renderDeleteControls('guesses', guesses.length);
 }
+
+document.getElementById('guess-history-entries').addEventListener('click', (event) => {
+  const button = event.target.closest('button[data-guess-time-out-index]');
+  if (!button) return;
+
+  try {
+    const rows = readGuesses();
+    const date = ui.historyDate.value;
+    const day = rows[date];
+    const index = Number(button.dataset.guessTimeOutIndex);
+    const guess = day && day.guesses[index];
+    if (!guess || !guess.timeIn || guess.timeOut) {
+      throw new Error('This Guest entry cannot be checked out.');
+    }
+    guess.timeOut = new Date().toISOString();
+    localStorage.setItem(STORAGE_KEYS.guesses, JSON.stringify(rows));
+    if (date === state.guessRecordDate && guess.recordedAt === state.guessRecordId) {
+      resetGuestCheckIn();
+    }
+    renderHistory();
+  } catch (error) {
+    ui.guessHistoryStatus.textContent = `Could not record Guest Time Out: ${error.message}`;
+  }
+});
 
 ui.historyDate.addEventListener('change', renderHistory);
 
@@ -476,76 +582,82 @@ function selectHistoryTab(tab) {
 ui.timeHistoryTab.addEventListener('click', () => selectHistoryTab('time'));
 ui.guessHistoryTab.addEventListener('click', () => selectHistoryTab('guess'));
 
-function updateGuessTimeDisplay(type, ts) {
-  const label = type === 'timeIn' ? 'Time In' : 'Time Out';
-  const target = type === 'timeIn' ? ui.guessTimeInDisplay : ui.guessTimeOutDisplay;
-  target.textContent = ts ? `${label} recorded at ${formatGuessTime(ts)}` : 'Not recorded';
+function updateGuestTimeInDisplay() {
+  ui.guessTimeInDisplay.textContent = state.guessTimeIn
+    ? `Time In recorded at ${formatGuessTime(state.guessTimeIn)}`
+    : 'Not recorded';
 }
 
-function syncGuestTimeStatus() {
-  updateGuessTimeDisplay('timeIn', state.guessTimeIn);
-  updateGuessTimeDisplay('timeOut', state.guessTimeOut);
+function resetGuestCheckIn() {
+  state.guessTimeIn = null;
+  state.guessRecordDate = null;
+  state.guessRecordId = null;
+  document.getElementById('guess-form').reset();
+  updateGuestTimeInDisplay();
+  ui.guessTimeInButton.textContent = 'Time In';
+}
+
+function saveGuestRecord(guess, date, recordId) {
+  const rows = readGuesses();
+  const day = rows[date] || { date, guesses: [] };
+  const existingIndex = day.guesses.findIndex((item) => item.recordedAt === recordId);
+
+  if (existingIndex === -1) day.guesses.push(guess);
+  else day.guesses[existingIndex] = { ...day.guesses[existingIndex], ...guess };
+
+  rows[date] = day;
+  localStorage.setItem(STORAGE_KEYS.guesses, JSON.stringify(rows));
 }
 
 ui.guessTimeInButton.addEventListener('click', () => {
-  state.guessTimeIn = new Date().toISOString();
-  state.guessTimeOut = null;
-  syncGuestTimeStatus();
-  ui.guessTimeOutButton.disabled = false;
-  ui.guessStatus.textContent = 'Time In recorded automatically.';
-});
-
-ui.guessTimeOutButton.addEventListener('click', () => {
-  if (!state.guessTimeIn) {
-    ui.guessStatus.textContent = 'Record Time In before Time Out.';
+  if (state.guessTimeIn && state.guessRecordDate && state.guessRecordId) {
+    const timeOut = new Date().toISOString();
+    try {
+      saveGuestRecord({ timeOut }, state.guessRecordDate, state.guessRecordId);
+      resetGuestCheckIn();
+      ui.guessStatus.textContent = '';
+      if (!ui.timeHistory.hidden) renderHistory();
+    } catch (error) {
+      ui.guessStatus.textContent = `Could not save Time Out: ${error.message}`;
+    }
     return;
   }
-  state.guessTimeOut = new Date().toISOString();
-  updateGuessTimeDisplay('timeIn', null);
-  updateGuessTimeDisplay('timeOut', state.guessTimeOut);
-  ui.guessStatus.textContent = 'Time Out recorded automatically.';
-});
 
-document.getElementById('guess-form').addEventListener('submit', (e) => {
-  e.preventDefault();
+  const name = document.getElementById('guess-name').value.trim();
+  const reason = document.getElementById('guess-reason').value.trim();
+  if (!name || !reason) {
+    ui.guessStatus.textContent = 'Enter the guest name and reason before recording Time In.';
+    return;
+  }
+
+  const timeIn = new Date().toISOString();
+  const date = localDateKey();
   const guess = {
-    name: document.getElementById('guess-name').value.trim(),
-    reason: document.getElementById('guess-reason').value.trim(),
+    name,
+    reason,
     associatedStudent: document.getElementById('associated-student').value.trim(),
     checker: document.getElementById('guess-checker').value,
-    timeIn: state.guessTimeIn,
-    timeOut: state.guessTimeOut,
-    recordedAt: new Date().toISOString(),
+    timeIn,
+    timeOut: null,
+    recordedAt: timeIn,
   };
 
-  if (!guess.name || !guess.reason || !guess.timeIn) {
-    ui.guessStatus.textContent = 'Please complete all required fields, including Time In.';
-    return;
-  }
-  if (guess.timeOut && guess.timeOut <= guess.timeIn) {
-    ui.guessStatus.textContent = 'Time Out must be later than Time In.';
-    return;
-  }
-
   try {
-    const rows = readGuesses();
-    const date = localDateKey();
-    const day = rows[date] || { date, guesses: [] };
-    day.guesses.push(guess);
-    rows[date] = day;
-    localStorage.setItem(STORAGE_KEYS.guesses, JSON.stringify(rows));
-
+    saveGuestRecord(guess, date, timeIn);
+    state.guessTimeIn = timeIn;
+    state.guessRecordDate = date;
+    state.guessRecordId = timeIn;
     document.getElementById('guess-form').reset();
-    state.guessTimeIn = null;
-    state.guessTimeOut = null;
-    syncGuestTimeStatus();
-    ui.guessTimeOutButton.disabled = true;
-    ui.guessStatus.textContent = `Guest record for ${guess.name} saved.`;
+    updateGuestTimeInDisplay();
+    ui.guessTimeInButton.textContent = 'Time Out';
+    ui.guessStatus.textContent = '';
     if (!ui.timeHistory.hidden) renderHistory();
   } catch (error) {
     ui.guessStatus.textContent = `Could not save this Guest record: ${error.message}`;
   }
 });
+
+document.getElementById('guess-form').addEventListener('submit', (e) => e.preventDefault());
 
 window.addEventListener('beforeunload', stopCamera);
 renderHistory();
