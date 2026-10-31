@@ -445,6 +445,9 @@ body {
 .guess-form label {
   font-weight: 600;
 }
+.guess-form label.is-disabled {
+  color: #788178;
+}
 .required-indicator {
   color: var(--danger);
 }
@@ -459,6 +462,11 @@ body {
   border-radius: 0.375rem;
   color: var(--green-600);
   font: inherit;
+}
+#guess-checker:disabled {
+  background: #e8ece8;
+  color: #788178;
+  cursor: not-allowed;
 }
 .history-tabs {
   margin-bottom: 1rem;
