@@ -35,6 +35,10 @@ const ui = {
   guessStatus: document.getElementById("guess-status"),
   guessTimeInDisplay: document.getElementById("guess-time-in-display"),
   guessTimeInButton: document.getElementById("guess-time-in-button"),
+  associatedStudent: document.getElementById("associated-student"),
+  guessChecker: document.getElementById("guess-checker"),
+  guessCheckerLabel: document.getElementById("guess-checker-label"),
+  guessCheckerRequired: document.getElementById("guess-checker-required"),
   startCamera: document.getElementById("start-camera"),
   stopCamera: document.getElementById("stop-camera"),
   scannerPreview: document.getElementById("scanner-preview"),
@@ -1043,10 +1047,18 @@ ui.guessTimeInButton.addEventListener("click", () => {
   const form = document.getElementById("guess-form");
   const name = form.elements.name.value.trim();
   const reason = form.elements.reason.value.trim();
+  const associatedStudent = ui.associatedStudent.value.trim();
 
   if (!name || !reason) {
     ui.guessStatus.textContent =
       "Enter the guest name and reason before recording Time In.";
+    return;
+  }
+
+  if (associatedStudent && !ui.guessChecker.value) {
+    ui.guessStatus.textContent =
+      "Select a relationship when an Associated Student is entered.";
+    ui.guessChecker.focus();
     return;
   }
 
@@ -1055,10 +1067,8 @@ ui.guessTimeInButton.addEventListener("click", () => {
   const guess = {
     name,
     reason,
-    associatedStudent: document
-      .getElementById("associated-student")
-      .value.trim(),
-    checker: document.getElementById("guess-checker").value,
+    associatedStudent,
+    checker: associatedStudent ? ui.guessChecker.value : "",
     timeIn,
     timeOut: null,
     recordedAt: timeIn,
@@ -1070,6 +1080,7 @@ ui.guessTimeInButton.addEventListener("click", () => {
     state.guessRecordDate = date;
     state.guessRecordId = timeIn;
     form.reset();
+    updateGuestRelationshipAvailability();
     updateGuestTimeInDisplay();
     ui.guessTimeInButton.textContent = "Time In";
     ui.guessStatus.textContent = "";
@@ -1082,6 +1093,24 @@ ui.guessTimeInButton.addEventListener("click", () => {
 document
   .getElementById("guess-form")
   .addEventListener("submit", (e) => e.preventDefault());
+
+function updateGuestRelationshipAvailability() {
+  const hasAssociatedStudent = Boolean(ui.associatedStudent.value.trim());
+  ui.guessChecker.disabled = !hasAssociatedStudent;
+  ui.guessChecker.required = hasAssociatedStudent;
+  ui.guessCheckerRequired.hidden = !hasAssociatedStudent;
+  ui.guessCheckerLabel.classList.toggle(
+    "is-disabled",
+    !hasAssociatedStudent,
+  );
+  if (!hasAssociatedStudent) ui.guessChecker.value = "";
+}
+
+ui.associatedStudent.addEventListener(
+  "input",
+  updateGuestRelationshipAvailability,
+);
+updateGuestRelationshipAvailability();
 
 window.addEventListener("beforeunload", stopCamera);
 updateKioskClock();
