@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -10,23 +10,34 @@
   <body>
     <header class="site-header">
       <div class="header-content">
-        <button class="menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation menu" aria-controls="main-sidebar" aria-expanded="false">
-          <span></span>
-          <span></span>
-          <span></span>
+        <button
+          class="menu-toggle"
+          id="menu-toggle"
+          type="button"
+          aria-label="Open navigation menu"
+          aria-controls="main-sidebar"
+          aria-expanded="false"
+        >
+          <span></span> <span></span> <span></span>
         </button>
         <h1>GC <span class="brand-highlight">ScanGate</span></h1>
       </div>
     </header>
-
     <div class="page-layout">
-      <button class="sidebar-backdrop" id="sidebar-backdrop" type="button" aria-label="Close navigation menu" hidden></button>
-
+      <button
+        class="sidebar-backdrop"
+        id="sidebar-backdrop"
+        type="button"
+        aria-label="Close navigation menu"
+        hidden
+      ></button>
       <aside class="sidebar" id="main-sidebar" aria-label="Main sidebar">
         <nav class="sidebar-nav" aria-label="Main navigation">
           <a class="active" href="#scan" aria-current="page">
             <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M8 8h3v3H8zM15 8h1M15 11h1M8 15h1M11 15v1M14 14h2v2h-2z" />
+              <path
+                d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M8 8h3v3H8zM15 8h1M15 11h1M8 15h1M11 15v1M14 14h2v2h-2z"
+              />
             </svg>
             <span>Scan</span>
           </a>
@@ -45,66 +56,180 @@
             <span>Guest</span>
           </a>
         </nav>
-
         <nav class="sidebar-footer" aria-label="Account navigation">
           <a href="#about">About</a>
           <a class="logout-link" href="#logout">Log Out</a>
         </nav>
       </aside>
-
       <main class="main-content">
         <section class="content-view" id="scan">
           <h2>Scan</h2>
-          <p class="section-description">Choose a mode, then scan the ID QR code.</p>
-
+          <p class="section-description">
+            Choose a mode, then scan the ID QR code.
+          </p>
           <div class="mode-picker" role="group" aria-label="Select time mode">
-            <button class="mode-button selected" id="time-in-mode" type="button" aria-pressed="true">Time In</button>
-            <button class="mode-button" id="time-out-mode" type="button" aria-pressed="false">Time Out</button>
+            <button
+              class="mode-button selected"
+              id="time-in-mode"
+              type="button"
+              aria-pressed="true"
+            >
+              Time In
+            </button>
+            <button
+              class="mode-button"
+              id="time-out-mode"
+              type="button"
+              aria-pressed="false"
+            >
+              Time Out
+            </button>
           </div>
-
           <div class="scanner-panel">
-            <video id="scanner-video" aria-label="QR code camera preview" playsinline muted hidden></video>
+            <video
+              id="scanner-video"
+              aria-label="QR code camera preview"
+              playsinline
+              muted
+              hidden
+            ></video>
             <div class="scanner-controls">
-              <button class="primary-button" id="start-camera" type="button">Start QR Scanner</button>
-              <button class="secondary-button" id="stop-camera" type="button" hidden>Stop Camera</button>
+              <button class="primary-button" id="start-camera" type="button">
+                Start QR Scanner
+              </button>
+              <button
+                class="secondary-button"
+                id="stop-camera"
+                type="button"
+                hidden
+              >
+                Stop Camera
+              </button>
             </div>
-            <p class="status-message" id="scan-status" role="status" aria-live="polite">Ready to scan.</p>
+            <p
+              class="status-message"
+              id="scan-status"
+              role="status"
+              aria-live="polite"
+            >
+              Ready to scan.
+            </p>
           </div>
-
           <form class="manual-entry" id="manual-entry-form">
             <label for="entry-id">Or enter ID Number</label>
             <div class="manual-entry-controls">
-              <input id="entry-id" name="entry-id" type="text" inputmode="numeric" autocomplete="off" maxlength="9" pattern="[0-9]{9}" placeholder="123456789" required />
+              <input
+                id="entry-id"
+                name="entry-id"
+                type="text"
+                inputmode="numeric"
+                autocomplete="off"
+                maxlength="9"
+                pattern="[0-9]{9}"
+                placeholder="123456789"
+                required
+              />
               <button class="secondary-button" type="submit">Record</button>
             </div>
           </form>
         </section>
-
         <section class="content-view" id="time-history" hidden>
           <h2>Time History</h2>
           <p class="section-description">View saved entries by day.</p>
-
           <div class="history-tabs" role="tablist" aria-label="History type">
-            <button class="history-tab selected" id="time-history-tab" type="button" role="tab" aria-selected="true" aria-controls="time-history-panel">Time Entries</button>
-            <button class="history-tab" id="guess-history-tab" type="button" role="tab" aria-selected="false" aria-controls="guess-history-panel">Guest</button>
+            <button
+              class="history-tab selected"
+              id="time-history-tab"
+              type="button"
+              role="tab"
+              aria-selected="true"
+              aria-controls="time-history-panel"
+            >
+              Time Entries
+            </button>
+            <button
+              class="history-tab"
+              id="guess-history-tab"
+              type="button"
+              role="tab"
+              aria-selected="false"
+              aria-controls="guess-history-panel"
+            >
+              Guest
+            </button>
           </div>
-
           <div class="history-controls">
             <label for="history-date">Date</label>
             <select id="history-date"></select>
+            <button
+              class="secondary-button"
+              id="download-selected-history"
+              type="button"
+            >
+              Download Time Entries JSON
+            </button>
+            <button
+              class="secondary-button"
+              id="import-history-button"
+              type="button"
+            >
+              Import JSON
+            </button>
+            <input
+              id="history-file-input"
+              type="file"
+              accept=".json,application/json"
+              multiple
+              hidden
+            />
           </div>
-
-          <section id="time-history-panel" role="tabpanel" aria-labelledby="time-history-tab">
+          <section
+            id="time-history-panel"
+            role="tabpanel"
+            aria-labelledby="time-history-tab"
+          >
             <div class="history-toolbar">
-              <button class="secondary-button history-download" id="download-history" type="button">Download Time Entries JSON</button>
               <div class="history-actions">
-                <button class="secondary-button danger-button" id="select-entries-button" type="button" hidden>Select entries to delete</button>
-                <button class="secondary-button danger-button" id="delete-selected-button" type="button" hidden>Delete selected</button>
-                <button class="secondary-button danger-button" id="confirm-delete-entries-button" type="button" hidden>Confirm Delete</button>
-                <button class="secondary-button" id="cancel-delete-button" type="button" hidden>Cancel</button>
+                <button
+                  class="secondary-button danger-button"
+                  id="select-entries-button"
+                  type="button"
+                  hidden
+                >
+                  Select entries to delete
+                </button>
+                <button
+                  class="secondary-button danger-button"
+                  id="delete-selected-button"
+                  type="button"
+                  hidden
+                >
+                  Delete selected
+                </button>
+                <button
+                  class="secondary-button danger-button"
+                  id="confirm-delete-entries-button"
+                  type="button"
+                  hidden
+                >
+                  Confirm Delete
+                </button>
+                <button
+                  class="secondary-button"
+                  id="cancel-delete-button"
+                  type="button"
+                  hidden
+                >
+                  Cancel
+                </button>
               </div>
             </div>
-            <p class="status-message" id="history-status" role="status" aria-live="polite"></p>
+            <p
+              class="status-message"
+              id="history-status"
+              role="status"
+              aria-live="polite"
+            ></p>
             <div class="table-container">
               <table class="history-table">
                 <thead>
@@ -119,18 +244,54 @@
               </table>
             </div>
           </section>
-
-          <section id="guess-history-panel" role="tabpanel" aria-labelledby="guess-history-tab" hidden>
+          <section
+            id="guess-history-panel"
+            role="tabpanel"
+            aria-labelledby="guess-history-tab"
+            hidden
+          >
             <div class="history-toolbar">
-              <button class="secondary-button history-download" id="download-guess-history" type="button">Download Guest JSON</button>
               <div class="history-actions">
-                <button class="secondary-button danger-button" id="select-guesses-button" type="button" hidden>Select entries to delete</button>
-                <button class="secondary-button danger-button" id="delete-selected-guesses-button" type="button" hidden>Delete selected</button>
-                <button class="secondary-button danger-button" id="confirm-delete-guesses-button" type="button" hidden>Confirm Delete</button>
-                <button class="secondary-button" id="cancel-guess-delete-button" type="button" hidden>Cancel</button>
+                <button
+                  class="secondary-button danger-button"
+                  id="select-guesses-button"
+                  type="button"
+                  hidden
+                >
+                  Select entries to delete
+                </button>
+                <button
+                  class="secondary-button danger-button"
+                  id="delete-selected-guesses-button"
+                  type="button"
+                  hidden
+                >
+                  Delete selected
+                </button>
+                <button
+                  class="secondary-button danger-button"
+                  id="confirm-delete-guesses-button"
+                  type="button"
+                  hidden
+                >
+                  Confirm Delete
+                </button>
+                <button
+                  class="secondary-button"
+                  id="cancel-guess-delete-button"
+                  type="button"
+                  hidden
+                >
+                  Cancel
+                </button>
               </div>
             </div>
-            <p class="status-message" id="guess-history-status" role="status" aria-live="polite"></p>
+            <p
+              class="status-message"
+              id="guess-history-status"
+              role="status"
+              aria-live="polite"
+            ></p>
             <div class="table-container">
               <table class="history-table">
                 <thead>
@@ -149,21 +310,45 @@
             </div>
           </section>
         </section>
-
         <section class="content-view" id="guest" hidden>
           <h2>Guest</h2>
-          <p class="section-description">Record visitor details and their relationship to the student.</p>
-
+          <p class="section-description">
+            Record visitor details and their relationship to the student.
+          </p>
           <form class="guess-form" id="guess-form">
-            <label for="guess-name">Name: <span class="required-indicator" aria-hidden="true">*</span></label>
-            <input id="guess-name" name="name" type="text" autocomplete="name" required />
-
-            <label for="guess-reason">Reason: <span class="required-indicator" aria-hidden="true">*</span></label>
-            <textarea id="guess-reason" name="reason" rows="3" required></textarea>
-
-            <label for="associated-student">Associated Student (optional):</label>
-            <input id="associated-student" name="associated-student" type="text" />
-
+            <label for="guess-name"
+              >Name:
+              <span class="required-indicator" aria-hidden="true"
+                >*</span
+              ></label
+            >
+            <input
+              id="guess-name"
+              name="name"
+              type="text"
+              autocomplete="name"
+              required
+            />
+            <label for="guess-reason"
+              >Reason:
+              <span class="required-indicator" aria-hidden="true"
+                >*</span
+              ></label
+            >
+            <textarea
+              id="guess-reason"
+              name="reason"
+              rows="3"
+              required
+            ></textarea>
+            <label for="associated-student"
+              >Associated Student (optional):</label
+            >
+            <input
+              id="associated-student"
+              name="associated-student"
+              type="text"
+            />
             <label for="guess-checker">Relationship (optional):</label>
             <select id="guess-checker" name="checker">
               <option value="">Select a relationship (optional)</option>
@@ -171,16 +356,24 @@
               <option value="Parent">Parent</option>
               <option value="Other">Other</option>
             </select>
-
             <div class="guess-time-controls">
-              <button class="secondary-button" id="guess-time-in-button" type="button">Time In</button>
+              <button
+                class="secondary-button"
+                id="guess-time-in-button"
+                type="button"
+              >
+                Time In
+              </button>
               <span id="guess-time-in-display" role="status">Not recorded</span>
             </div>
-
-            <p class="status-message" id="guess-status" role="status" aria-live="polite"></p>
+            <p
+              class="status-message"
+              id="guess-status"
+              role="status"
+              aria-live="polite"
+            ></p>
           </form>
         </section>
-
         <section class="content-view" id="about" hidden>
           <h2>About</h2>
           <div class="about-team">
@@ -204,8 +397,13 @@
         </section>
       </main>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js" onerror="this.onerror=null;this.src='https://unpkg.com/jsqr@1.4.0/dist/jsQR.js'"></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"
+      onerror="
+        this.onerror = null;
+        this.src = 'https://unpkg.com/jsqr@1.4.0/dist/jsQR.js';
+      "
+    ></script>
     <script src="app.js"></script>
   </body>
 </html>
