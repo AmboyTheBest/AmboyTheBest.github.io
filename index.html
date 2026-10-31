@@ -100,6 +100,7 @@
               <div class="history-actions">
                 <button class="secondary-button danger-button" id="select-entries-button" type="button" hidden>Select entries to delete</button>
                 <button class="secondary-button danger-button" id="delete-selected-button" type="button" hidden>Delete selected</button>
+                <button class="secondary-button danger-button" id="confirm-delete-entries-button" type="button" hidden>Confirm Delete</button>
                 <button class="secondary-button" id="cancel-delete-button" type="button" hidden>Cancel</button>
               </div>
             </div>
@@ -120,12 +121,21 @@
           </section>
 
           <section id="guess-history-panel" role="tabpanel" aria-labelledby="guess-history-tab" hidden>
-            <button class="secondary-button history-download" id="download-guess-history" type="button">Download Guest JSON</button>
+            <div class="history-toolbar">
+              <button class="secondary-button history-download" id="download-guess-history" type="button">Download Guest JSON</button>
+              <div class="history-actions">
+                <button class="secondary-button danger-button" id="select-guesses-button" type="button" hidden>Select entries to delete</button>
+                <button class="secondary-button danger-button" id="delete-selected-guesses-button" type="button" hidden>Delete selected</button>
+                <button class="secondary-button danger-button" id="confirm-delete-guesses-button" type="button" hidden>Confirm Delete</button>
+                <button class="secondary-button" id="cancel-guess-delete-button" type="button" hidden>Cancel</button>
+              </div>
+            </div>
             <p class="status-message" id="guess-history-status" role="status" aria-live="polite"></p>
             <div class="table-container">
               <table class="history-table">
                 <thead>
                   <tr>
+                    <th id="guess-select-heading" scope="col" hidden>Select</th>
                     <th scope="col">Name</th>
                     <th scope="col">Reason</th>
                     <th scope="col">Associated Student</th>
@@ -166,12 +176,6 @@
               <span id="guess-time-in-display" role="status">Not recorded</span>
             </div>
 
-            <div class="guess-time-controls">
-              <button class="secondary-button" id="guess-time-out-button" type="button" disabled>Time Out</button>
-              <span id="guess-time-out-display" role="status">Not recorded</span>
-            </div>
-
-            <button class="primary-button" type="submit">Save Guest</button>
             <p class="status-message" id="guess-status" role="status" aria-live="polite"></p>
           </form>
         </section>
