@@ -14,7 +14,7 @@ const state = {
   confirmDeletion: false,
 };
 const navLinks = [
-  ...document.querySelectorAll('.sidebar a[href^="#"]:not(.logout-link)'),
+  ...document.querySelectorAll('.sidebar a[href^="#"]'),
 ];
 const contentViews = [...document.querySelectorAll(".content-view")];
 const ui = {
@@ -22,7 +22,6 @@ const ui = {
   sidebar: document.getElementById("main-sidebar"),
   sidebarBackdrop: document.getElementById("sidebar-backdrop"),
   scanStatus: document.getElementById("scan-status"),
-  entryId: document.getElementById("entry-id"),
   timeHistory: document.getElementById("time-history"),
   historyDate: document.getElementById("history-date"),
   importHistoryButton: document.getElementById("import-history-button"),
@@ -38,7 +37,14 @@ const ui = {
   guessTimeInButton: document.getElementById("guess-time-in-button"),
   startCamera: document.getElementById("start-camera"),
   stopCamera: document.getElementById("stop-camera"),
+  scannerPreview: document.getElementById("scanner-preview"),
   scannerVideo: document.getElementById("scanner-video"),
+  kioskExitButton: document.getElementById("kiosk-exit-button"),
+  kioskClockTime: document.getElementById("kiosk-clock-time"),
+  kioskClockDate: document.getElementById("kiosk-clock-date"),
+  kioskAttendanceEntries: document.getElementById(
+    "kiosk-attendance-entries",
+  ),
   downloadSelectedHistory: document.getElementById("download-selected-history"),
   selectEntriesButton: document.getElementById("select-entries-button"),
   deleteSelectedButton: document.getElementById("delete-selected-button"),
@@ -113,10 +119,14 @@ document.addEventListener("keydown", (e) => {
 });
 
 function showView(id) {
-  const view = document.getElementById(id);
+  const isKioskMode = id === "kiosk-mode";
+  const view = document.getElementById(isKioskMode ? "scan" : id);
   if (!view || !view.classList.contains("content-view")) return;
 
+  const wasKioskMode = document.body.classList.contains("kiosk-mode");
+  if (wasKioskMode && !isKioskMode && state.scannerActive) stopCamera();
   window.history.replaceState(null, "", `#${id}`);
+  document.body.classList.toggle("kiosk-mode", isKioskMode);
   contentViews.forEach((v) => (v.hidden = v !== view));
   navLinks.forEach((link) => {
     const active = link.getAttribute("href") === `#${id}`;
@@ -126,12 +136,21 @@ function showView(id) {
       : link.removeAttribute("aria-current");
   });
   if (id === "time-history") renderHistory();
+  if (isKioskMode) {
+    updateKioskClock();
+    renderKioskAttendance();
+    if (!state.scannerActive) startCamera();
+  }
 }
+
+ui.kioskExitButton.addEventListener("click", () => showView("scan"));
 
 navLinks.forEach((link) => {
   link.addEventListener("click", (e) => {
     const id = link.getAttribute("href").slice(1);
-    const view = document.getElementById(id);
+    const view = document.getElementById(
+      id === "kiosk-mode" ? "scan" : id,
+    );
     if (view && view.classList.contains("content-view")) {
       e.preventDefault();
       showView(id);
@@ -205,27 +224,27 @@ function recordEntry(rawId) {
     const rows = readEntries();
     const today = localDateKey();
     const todayDay = rows[today] || { date: today, entries: [] };
-    let entry = todayDay.entries.find((item) => item.id === id);
+    const entry = [...todayDay.entries]
+      .reverse()
+      .find((item) => item.id === id && item.timeIn && !item.timeOut);
 
     if (state.selectedMode === "timeIn") {
-      if (entry && entry.timeIn) {
-        setScanStatus(`ID ${id} already has a Time In recorded for today.`);
-        return;
-      }
-      if (!entry) {
-        entry = { id, timeIn: null, timeOut: null };
-        todayDay.entries.push(entry);
-      }
-      entry.timeIn = new Date().toISOString();
-    } else {
-      if (!entry || !entry.timeIn) {
+      if (entry) {
         setScanStatus(
-          `ID ${id} needs a Time In before Time Out can be recorded.`,
+          `ID ${id} already has an active Time In. Record Time Out first.`,
         );
         return;
       }
-      if (entry.timeOut) {
-        setScanStatus(`ID ${id} already has a Time Out recorded for today.`);
+      todayDay.entries.push({
+        id,
+        timeIn: new Date().toISOString(),
+        timeOut: null,
+      });
+    } else {
+      if (!entry) {
+        setScanStatus(
+          `ID ${id} needs a Time In before Time Out can be recorded.`,
+        );
         return;
       }
       entry.timeOut = new Date().toISOString();
@@ -236,19 +255,14 @@ function recordEntry(rawId) {
     setScanStatus(
       `${state.selectedMode === "timeIn" ? "Time In" : "Time Out"} recorded for ID ${id} at ${new Date().toLocaleTimeString()}.`,
     );
-    ui.entryId.value = "";
     refreshHistoryAfterSave();
+    renderKioskAttendance();
   } catch (error) {
     setScanStatus(
       `Could not save this entry in browser storage: ${error.message}`,
     );
   }
 }
-
-document.getElementById("manual-entry-form").addEventListener("submit", (e) => {
-  e.preventDefault();
-  recordEntry(ui.entryId.value);
-});
 
 function stopCamera() {
   state.scannerActive = false;
@@ -258,6 +272,7 @@ function stopCamera() {
   }
   ui.scannerVideo.srcObject = null;
   ui.scannerVideo.hidden = true;
+  ui.scannerPreview.hidden = true;
   ui.stopCamera.hidden = true;
   ui.startCamera.hidden = false;
 }
@@ -303,14 +318,14 @@ async function startCamera() {
 
   if (!detector && !hasJsQr) {
     setScanStatus(
-      "QR scanning could not load its decoder. Check your internet connection, reload the page, or enter the 9-digit number below.",
+      "QR scanning could not load its decoder. Check your internet connection and reload the page.",
     );
     return;
   }
 
   if (!getUserMedia) {
     setScanStatus(
-      "Camera access is unavailable. Open this site over HTTPS (or localhost), allow camera access, or enter the 9-digit number below.",
+      "Camera access is unavailable. Open this site over HTTPS (or localhost) and allow camera access.",
     );
     return;
   }
@@ -347,6 +362,7 @@ async function startCamera() {
     if (!state.cameraStream) throw new Error("No usable camera was found.");
     ui.scannerVideo.srcObject = state.cameraStream;
     ui.scannerVideo.hidden = false;
+    ui.scannerPreview.hidden = false;
     await ui.scannerVideo.play();
     state.scannerActive = true;
     ui.stopCamera.hidden = false;
@@ -372,6 +388,7 @@ async function startCamera() {
     return;
   }
 
+  let lastKioskScan = null;
   const scanLoop = async () => {
     if (!state.scannerActive) return;
 
@@ -404,9 +421,19 @@ async function startCamera() {
       }
 
       if (rawValue !== null) {
-        stopCamera();
-        recordEntry(rawValue);
-        return;
+        if (document.body.classList.contains("kiosk-mode")) {
+          const scanKey = `${state.selectedMode}:${rawValue}`;
+          if (scanKey !== lastKioskScan) {
+            lastKioskScan = scanKey;
+            recordEntry(rawValue);
+          }
+        } else {
+          stopCamera();
+          recordEntry(rawValue);
+          return;
+        }
+      } else {
+        lastKioskScan = null;
       }
     } catch (error) {
       stopCamera();
@@ -437,6 +464,61 @@ function formatGuessTime(ts) {
   return Number.isNaN(date.getTime())
     ? "Invalid time"
     : date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
+
+function updateKioskClock() {
+  const now = new Date();
+  ui.kioskClockTime.textContent = now.toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+  ui.kioskClockDate.textContent = now.toLocaleDateString([], {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+function renderKioskAttendance() {
+  ui.kioskAttendanceEntries.replaceChildren();
+  try {
+    const day = readEntries()[localDateKey()];
+    const entries = day ? [...day.entries].reverse() : [];
+    if (!entries.length) {
+      const row = document.createElement("tr");
+      const cell = document.createElement("td");
+      cell.colSpan = 3;
+      cell.className = "kiosk-empty-state";
+      cell.textContent = "No student scans recorded today.";
+      row.append(cell);
+      ui.kioskAttendanceEntries.append(row);
+      return;
+    }
+
+    entries.forEach((entry) => {
+      const row = document.createElement("tr");
+      [
+        entry.id,
+        formatGuessTime(entry.timeIn),
+        formatGuessTime(entry.timeOut),
+      ].forEach((value) => {
+        const cell = document.createElement("td");
+        cell.textContent = value;
+        row.append(cell);
+      });
+      ui.kioskAttendanceEntries.append(row);
+    });
+  } catch (error) {
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = 3;
+    cell.className = "kiosk-empty-state";
+    cell.textContent = `Could not read today's attendance: ${error.message}`;
+    row.append(cell);
+    ui.kioskAttendanceEntries.append(row);
+  }
 }
 
 function renderHistory(selectedDate) {
@@ -805,7 +887,7 @@ async function importHistoryFile(file) {
   data[collection].forEach((item) => {
     const index = day[collection].findIndex((saved) =>
       collection === "entries"
-        ? saved.id === item.id
+        ? saved.id === item.id && saved.timeIn === item.timeIn
         : item.recordedAt
           ? saved.recordedAt === item.recordedAt
           : saved.name === item.name && saved.timeIn === item.timeIn,
@@ -1002,6 +1084,8 @@ document
   .addEventListener("submit", (e) => e.preventDefault());
 
 window.addEventListener("beforeunload", stopCamera);
+updateKioskClock();
+window.setInterval(updateKioskClock, 1000);
 renderHistory();
 const initialHash = window.location.hash.slice(1);
 const initialViewId = initialHash === "guess" ? "guest" : initialHash;
@@ -1009,7 +1093,9 @@ const initialView = document.getElementById(initialViewId);
 const defaultView =
   initialView && initialView.classList.contains("content-view")
     ? initialViewId
-    : "scan";
+    : initialHash === "kiosk-mode"
+      ? "kiosk-mode"
+      : "scan";
 showView(defaultView);
 if (defaultView === "time-history") {
   selectHistoryTab(
